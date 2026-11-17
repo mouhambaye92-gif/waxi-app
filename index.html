@@ -1758,7 +1758,30 @@ function warnTts(kind){
     ? `Aucune voix ${name} n'est installée sur cet appareil. Ouvre Waxi dans Edge ou Chrome, ou ajoute la voix dans Paramètres Windows › Heure et langue › Voix.`
     : "Le son ne sort pas dans ce navigateur. Ouvre Waxi dans Chrome ou Edge et vérifie le volume.");
 }
-async function say(text, rate=0.95){
+/* ---- Voix enregistrées (Piper, voix neuronale) : audio/<langue>/<hash>.mp3 ----
+   Plus humaines et plus fortes que la synthèse du navigateur, identiques sur tous les appareils.
+   Si un fichier manque, on retombe sur la synthèse vocale du navigateur. */
+function fnv1a(str){
+  let h = 0x811c9dc5;
+  for(const b of new TextEncoder().encode(str)){ h ^= b; h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8,"0");
+}
+const player = new Audio();
+player.preload = "auto";
+let playToken = 0;
+function say(text, rate=0.95){
+  if(!text) return;
+  const token = ++playToken;
+  try{ if(HAS_TTS) speechSynthesis.cancel(); }catch(e){}
+  player.pause();
+  player.src = `audio/${S.lang}/${fnv1a(text)}.mp3`;
+  player.playbackRate = rate < 0.8 ? 0.72 : 1;      // bouton « tortue » : plus lent
+  player.volume = 1;
+  const fallback = () => { if(token===playToken) sayTTS(text, rate); };
+  player.onerror = fallback;
+  player.play().then(()=>{ ttsOk = true; }).catch(err=>{ if(err && err.name!=="AbortError") fallback(); });
+}
+async function sayTTS(text, rate=0.95){
   if(!text) return;
   if(!HAS_TTS) return warnTts("silent");
   await voicesReady;
@@ -2180,7 +2203,7 @@ function vProfile(){
     <div class="card">
       <div class="row"><b>Langue</b><select class="sel" onchange="S.lang=this.value;save();render()">${Object.entries(LANGS).map(([k,l])=>`<option value="${k}" ${S.lang===k?"selected":""}>${l.name}</option>`).join("")}</select></div>
       <div class="row"><b>Objectif</b><select class="sel" onchange="S.goal=+this.value;save();render()">${GOALS.map(([x,n])=>`<option value="${x}" ${S.goal===x?"selected":""}>${n} · ${x} XP</option>`).join("")}</select></div>
-      <div class="row"><b>Son</b><span class="note">${!HAS_TTS?"Non pris en charge":bestVoice(lang().voice)?esc(bestVoice(lang().voice).name.replace(/^Microsoft |^Google /,"").split(" - ")[0]):"Voix manquante"}</span><button class="chip" onclick="testSound()">Tester</button></div>
+      <div class="row"><b>Son</b><span class="note">Voix Waxi enregistrée</span><button class="chip" onclick="testSound()">Tester</button></div>
       <div class="row"><b>Micro</b><span class="note">${SR?"Disponible":"Non pris en charge ici"}</span></div>
     </div>
     <button class="btn ghost" style="margin-top:14px" onclick="if(confirm('Effacer toute ta progression ?')){S=fresh();save();ob={step:0,lang:null,goal:20};go('ob')}">Réinitialiser la progression</button>

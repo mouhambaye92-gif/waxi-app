@@ -17,10 +17,21 @@ Application web pour apprendre une langue **à voix haute** : anglais (parcours 
 ## Technique
 
 - Un seul fichier `index.html` : HTML, CSS et JavaScript sans framework ni étape de build
-- Voix : Web Speech API (`speechSynthesis` pour la lecture, `SpeechRecognition` pour le micro)
+- Voix : phrases pré-enregistrées avec [Piper](https://github.com/rhasspy/piper) (voix neuronale), dans `audio/<langue>/<hash>.mp3`, volume normalisé. Si un fichier manque, la synthèse vocale du navigateur prend le relais
+- Micro : Web Speech API (`SpeechRecognition`)
 - Progression enregistrée dans le navigateur (`localStorage`)
 - Hébergé sur Vercel : chaque `git push` sur `main` met le site à jour automatiquement
 
 ## Lancer en local
 
-Ouvrir `index.html` dans Chrome ou Edge. Rien à installer.
+Servir le dossier avec un petit serveur (par exemple `npx serve .`) puis l'ouvrir dans Chrome ou Edge : les fichiers audio ne se chargent pas toujours en ouvrant `index.html` directement.
+
+## Crédits des voix
+
+| Langue | Voix Piper | Données d'entraînement |
+|---|---|---|
+| Anglais | `en_US-ljspeech-high` | LJ Speech, domaine public |
+| Portugais (Brésil) | `pt_BR-faber-medium` | NabuCasa voice-datasets, CC0 |
+| Espagnol | `es_ES-davefx-medium` | NabuCasa voice-datasets, CC0 |
+
+Modèles : [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices).
